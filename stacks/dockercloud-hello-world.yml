@@ -1,0 +1,17 @@
+version: '3.4'
+services:
+  web:
+    image: dockercloud/hello-world
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: ingress
+    deploy:
+      mode: replicated
+      replicas: 6
+      placement:
+        preferences:
+          - spread: node.labels.zone
+        constraints:
+          - node.role == worker
