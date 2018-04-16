@@ -1,0 +1,72 @@
+version: '3.4'
+services:
+  server:
+    image: consul:1.0.6
+    command: 
+      - "agent"
+      - "-server"
+      - "-bootstrap-expect=3"
+      - "-ui"
+      - "-retry-join=server"
+      - "-client=0.0.0.0"
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+    ports:
+      - target: 8500
+        published: 8500
+        mode: host
+    networks:
+      - proxy
+    deploy:
+      mode: global
+      endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - node.role == manager
+      restart_policy:
+        condition: any
+        delay: 5s
+        window: 30s
+    volumes:
+      - type: volume
+        source: consul_data
+        target: /consul/data
+
+  client:
+    image: consul:1.0.6
+    command: 
+      - "agent"
+      - "-retry-join=server"
+      - "-client=0.0.0.0"
+    environment:
+      - CONSUL_BIND_INTERFACE=eth0
+    ports:
+      - target: 8500
+        published: 8500
+        mode: host
+    networks:
+      - proxy
+    deploy:
+      mode: global
+      endpoint_mode: dnsrr
+      placement:
+        constraints:
+          - node.role == worker
+      update_config:
+        parallelism: 1
+        failure_action: rollback
+        delay: 10s
+      restart_policy:
+        condition: any
+        delay: 5s
+        window: 30s
+    volumes:
+      - type: volume
+        source: consul_data
+        target: /consul/data
+networks:
+  proxy:
+    external: true
+
+volumes:
+  consul_data:
